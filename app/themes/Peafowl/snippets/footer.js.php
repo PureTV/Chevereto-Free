@@ -39,15 +39,18 @@ CHV.obj.config = {
 	image : {
 		max_filesize: "<?php echo CHV\getSetting('upload_max_filesize_mb') . ' MB'; ?>",
 		right_click: <?php echo json_encode(CHV\getSetting('theme_image_right_click')); ?>,
+		load_max_filesize: "<?php echo CHV\getSetting('image_load_max_filesize_mb') . ' MB'; ?>",
+		max_width: <?php echo json_encode(CHV\getSetting('upload_max_image_width')); ?>,
+		max_height: <?php echo json_encode(CHV\getSetting('upload_max_image_height')); ?>,
 	},
 	upload: {
 		redirect_single_upload: <?php echo json_encode(CHV\getSetting('enable_redirect_single_upload')); ?>,
 		threads: <?php echo json_encode(CHV\getSetting('upload_threads')); ?>,
-		image_types: <?php echo json_encode(CHV\Upload::getEnabledImageFormats()); ?>
+		image_types: <?php echo json_encode(CHV\Image::getEnabledImageFormats()); ?>,
 	},
 	user: {
 		avatar_max_filesize: "<?php echo CHV\getSetting('user_image_avatar_max_filesize_mb') . ' MB'; ?>",
-		background_max_filesize: "<?php echo CHV\getSetting('user_image_background_max_filesize_mb') . ' MB'; ?>"
+		background_max_filesize: "<?php echo CHV\getSetting('user_image_background_max_filesize_mb') . ' MB'; ?>",
 	},
 	recaptcha: {
 		enabled: <?php echo CHV\getSettings()['recaptcha'] ? 'true' : 'false'; ?>,
@@ -102,7 +105,7 @@ CHV.obj.resource = {
 	id: "<?php echo $route["id_encoded"]; ?>",
 	type: "<?php echo G\get_route_name(); ?>",
 	url: "<?php echo (G\get_route_name() == "image" ?  $route["url_viewer"] : $route["url"]); ?>",
-	parent_url: "<?php echo G\get_route_name() == "image" ? get_image()['album']['url'] : (G\get_route_name() == 'dashboard' ? NULL : $route_user['url']) ?>"
+	parent_url: "<?php echo G\get_route_name() == "image" ? (get_image()['user']['is_private'] ? G\get_base_url() : get_image()['album']['url']) : (G\get_route_name() == 'dashboard' ? NULL : $route_user['url']) ?>"
 };
 
 <?php

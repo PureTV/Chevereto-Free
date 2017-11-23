@@ -261,29 +261,18 @@ function check_hashed_token($hash, $public_token_format) {
 }
 
 function recaptcha_check() {
-	// Detect reCaptcha version
-	if(preg_match('/[-_]+/', getSetting('recaptcha_public_key'))) { // new one
-		$endpoint = 'https://www.google.com/recaptcha/api/siteverify';
-		$params = [
-			'secret'	=> getSetting('recaptcha_private_key'),
-			'response'	=> $_POST['g-recaptcha-response'],
-			'remoteip'	=> G\get_client_ip()
-		];
-		
-		$endpoint .= '?' . http_build_query($params);
-		$re_api = json_decode(G\fetch_url($endpoint));
-		// Mimic old reCaptcha API return
-		return (object)['is_valid' => (bool)$re_api->success];
-	} else {
-		$re = array(
-			'private_key'	=> getSetting('recaptcha_private_key'),
-			'ip'			=> G\get_client_ip(),
-			'challenge'		=> $_POST['recaptcha_challenge_field'],
-			'response'		=> $_POST['recaptcha_response_field']
-		);
-		require_once(CHV_APP_PATH_LIB_VENDOR . 'recaptchalib.php');
-		return recaptcha_check_answer($re['private_key'], $re['ip'], $re['challenge'], $re['response']);
-	}
+	// V2 ONLY
+	$endpoint = 'https://www.google.com/recaptcha/api/siteverify';
+	$params = [
+		'secret'	=> getSetting('recaptcha_private_key'),
+		'response'	=> $_POST['g-recaptcha-response'],
+		'remoteip'	=> G\get_client_ip()
+	];
+	
+	$endpoint .= '?' . http_build_query($params);
+	$re_api = json_decode(G\fetch_url($endpoint));
+	// Mimic old reCaptcha API return
+	return (object)['is_valid' => (bool)$re_api->success];
 }
 
 function must_use_recaptcha($val, $max="") {
@@ -445,6 +434,17 @@ function decodeID($var) {
 	return cheveretoID($var, "decode");
 }
 
+// Linkify stuff to the internal redirector
+function linkify_redirector($text) {
+	return G\linkify_safe($text, ['callback' => function($url, $caption, $options) {
+		return '<a href="' . get_redirect_url($url) . '" '. $options['attr']. '>' . $caption . '</a>';
+	}]);
+}
+
+// A simple base64 encode, perfect to avoid SEO bitches
+function get_redirect_url($url) {
+	return G\get_base_url('redirect/' . base64_encode($url));
+}
 
 /**
  * Get some URLs
@@ -539,7 +539,7 @@ function upload_to_content_images($source, $what) {
 			$typeArr[$k . '_homepage'] = array_merge($typeArr[$k], ['name' => 'logo_homepage']);
 		}
 		foreach($typeArr as $k => &$v) {
-			$v['name'] .= '_' . round(microtime(TRUE) * 1000) . '_' . G\random_string(6); // prevent hard cache issues
+			$v['name'] .= '_' . number_format(round(microtime(TRUE) * 1000), 0, '', '') . '_' . G\random_string(6); // prevent hard cache issues
 		}
 		
 		$name = $typeArr[$what]['name'];
@@ -569,6 +569,9 @@ function upload_to_content_images($source, $what) {
 			$upload->setSource($source);
 			$upload->setDestination(CHV_PATH_CONTENT_IMAGES_SYSTEM);
 			$upload->setFilename($name);
+			if(in_array($what, ['homepage_cover_image_add', 'homepage_cover_image', 'consent_screen_cover_image'])) {
+				$upload->setOption('max_size', Settings::get('true_upload_max_filesize'));
+			}
 			$upload->exec();
 			$uploaded = $upload->uploaded;
 			
@@ -617,7 +620,7 @@ function upload_to_content_images($source, $what) {
 		$file = str_replace($uploaded['fileinfo']['filename'], $filename, $uploaded['file']);
 		
 		if(!@rename($uploaded['file'], $file)) {
-			throw new Exception("Can't rename uploaded ".$name." file", 500);
+			throw new Exception("Can't rename uploaded " . $name . " file", 500);
 		}
 		
 		$remove_old = isset($remove_old) ? $remove_old : TRUE;
@@ -713,7 +716,6 @@ function checkUpdates() {
 				Settings::update($settings_update);
 			}
 		}
-		return \CHV\Render\displayEmptyPixel();
 	} catch(Exception $e) {
 		error_log($e);
 	} // Silence

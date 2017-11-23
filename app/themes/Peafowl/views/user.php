@@ -58,7 +58,7 @@
 			<?php if(get_user()['is_private']) { ?>
 			<span class="user-meta font-size-small"><span class="icon icon-lock"></span><?php _se('Private profile'); ?></span>
 			<?php } ?>
-			<div class="user-meta"><span class="user-social-networks"><?php if(get_user()["twitter"]) { ?><a class="icon-twitter" href="<?php echo get_user()["twitter"]["url"]; ?>" rel="nofollow" target="_blank"></a><?php } if(get_user()["facebook"]) { ?><a class="icon-facebook" href="<?php echo get_user()["facebook"]["url"]; ?>" rel="nofollow" target="_blank"></a><?php } if(get_user()["website"]) { ?><a class="icon-globe" href="<?php echo get_user()["website_safe_html"]; ?>" rel="nofollow" target="_blank"></a><?php } ?></span><?php
+			<div class="user-meta"><span class="user-social-networks"><?php if(get_user()["twitter"]) { ?><a class="icon-twitter" href="<?php echo get_user()["twitter"]["url"]; ?>" rel="nofollow" target="_blank"></a><?php } if(get_user()["facebook"]) { ?><a class="icon-facebook" href="<?php echo get_user()["facebook"]["url"]; ?>" rel="nofollow" target="_blank"></a><?php } if(get_user()["website"]) { ?><a class="icon-globe" href="<?php echo get_user()['website_display']; ?>"<?php echo !get_user()['is_admin'] ? ' rel="nofollow"' : NULL; ?> target="_blank"></a><?php } ?></span><?php
 				if(is_owner() or is_admin()) {
 			?>
 				<a class="edit-link" href="<?php echo G\get_base_url(is_owner() ? 'settings/profile' : 'dashboard/user/' . get_user()['id']); ?>"><span class="icon-edit"></span><span><?php _se('Edit profile'); ?></span></a>
@@ -92,26 +92,36 @@
 			
 			<?php if(get_user()['bio']) { ?>
 			<div class="user-meta overflow-hidden">
-				<p class="c18 word-break-break-word"><?php echo G\linkify_safe(get_user()['bio']); ?></p>
+				<p class="c18 word-break-break-word"><?php echo get_user()['bio_linkify']; ?></p>
 			</div>
 			<?php } ?>
 						
 		</div>
 		
 		<div class="header-content-right phone-float-none">
-			<div class="float-right phone-float-none">
-				<a class="number-figures float-left phone-float-none" href="<?php echo get_user()["url"]; ?>"><b data-text="image-count"><?php echo get_user()["image_count"]; ?></b> <span data-text="image-label" data-label-single="<?php _ne('image', 'images', 1); ?>" data-label-plural="<?php _ne('image', 'images', 2); ?>"><?php _ne('image', 'images', get_user()['image_count']); ?></span></a>
-				<a class="number-figures float-left phone-float-none" href="<?php echo get_user()["url_albums"]; ?>"><b data-text="album-count"><?php echo get_user()["album_count"]; ?></b> <span data-text="album-label" data-label-single="<?php _ne('album', 'albums', 1); ?>" data-label-plural="<?php _ne('album', 'albums', 2); ?>"><?php _ne('album', 'albums', get_user()['album_count']); ?></span></a>
+			<div class="text-align-right">
+				<a class="number-figures" href="<?php echo get_user()["url"]; ?>"><b data-text="image-count"><?php echo get_user()["image_count"]; ?></b> <span data-text="image-label" data-label-single="<?php _ne('image', 'images', 1); ?>" data-label-plural="<?php _ne('image', 'images', 2); ?>"><?php _ne('image', 'images', get_user()['image_count']); ?></span></a>
+				<a class="number-figures" href="<?php echo get_user()["url_albums"]; ?>"><b data-text="album-count"><?php echo get_user()["album_count"]; ?></b> <span data-text="album-label" data-label-single="<?php _ne('album', 'albums', 1); ?>" data-label-plural="<?php _ne('album', 'albums', 2); ?>"><?php _ne('album', 'albums', get_user()['album_count']); ?></span></a>
 				<?php if(CHV\getSetting('enable_likes') && !get_user()['is_private']) { ?>
-				<a class="number-figures float-left phone-float-none" href="<?php echo get_user()["url"]; ?>/liked"><span class="icon icon-heart4"></span> <b data-text="likes-count"><?php echo get_user()["liked"]; ?></b></a>
+				<a class="number-figures" href="<?php echo get_user()["url"]; ?>/liked"><span class="icon icon-heart4"></span> <b data-text="likes-count"><?php echo get_user()["liked"]; ?></b></a>
 				<?php } ?>
 			</div>
-			<div class="input-search float-left phone-float-none">
+			<div class="input-search">
 				<form action="<?php echo get_user()["url"] . "/search"; ?>">
 					<input class="search one-icon-padding" type="text" placeholder="<?php echo get_safe_html_user()["name"]; ?>" autocomplete="off" spellcheck="false" name="q">
 				</form>
 				<span class="icon-search"></span><span class="icon close icon-close soft-hidden" data-action="clear-search"></span>
 			</div>
+			<?php
+				if(is_owner()) {
+			?>
+			<div class="text-align-right">
+				<button class="btn default" data-modal="edit" data-target="new-album"><span class="btn-icon icon-folder"></span><span class="btn-text"><?php _se('Create new album'); ?></span></button>
+				<?php G\Render\include_theme_file('snippets/modal_create_album.php'); ?>
+			</div>
+			<?php
+				}
+			?>
 		</div>
 	</div>
 	

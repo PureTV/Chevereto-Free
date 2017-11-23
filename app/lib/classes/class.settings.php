@@ -28,6 +28,8 @@ class Settings {
 	public function __construct() {
 		try {
 			
+			$settings = []; // init
+			
 			try {
 				$db_settings = DB::get('settings', 'all', NULL, ['field' => 'name', 'order' => 'asc']);
 				foreach($db_settings as $k => $v) {
@@ -39,12 +41,14 @@ class Settings {
 						$value = (bool) $value == 1;
 						$default = (bool) $default == 1;
 					}
+					if($v['typeset'] == 'string') {
+						$value = (string) $value;
+						$default = (string) $default;
+					}
 					$settings[$v['name']] = $value;
 					$defaults[$v['name']] = $default;
 				}
-				// Append some magic settings
 				$settings['social_signin'] = FALSE;
-				
 			} catch(Exception $e) {
 				$settings = [];
 				$defaults = [];
@@ -60,6 +64,14 @@ class Settings {
 				'upload_enabled_image_formats'	=> 'jpg,png,bmp,gif',
 				'upload_threads'				=> '2',
 				'enable_automatic_updates_check'=> 1,
+				// 1.0.6
+				'comments_api'					=> 'js',
+				'image_load_max_filesize_mb'	=> '3',
+				// 1.0.8
+				'upload_max_image_width' => '0',
+				'upload_max_image_height'=> '0',
+				// 1.0.9
+				'enable_expirable_uploads' => NULL,
 			];
 			
 			// Default listing thing
@@ -110,7 +122,7 @@ class Settings {
 				'enable_likes'				=> 0,
 				'social_signin'				=> 0,
 				'require_user_email_social_signup' => 0,
-				// HArdc0D3
+				// HArdc0D3, so haxxor that it hurts!
 				'username_min_length'		=> 3,
 				'username_max_length'		=> 16,
 				'username_pattern'			=> '^[\w]{3,16}$',
@@ -118,7 +130,7 @@ class Settings {
 				'user_password_max_length'	=> 32,
 				'user_password_pattern'		=> '^.{6,32}$',
 				'maintenance_image'			=> 'default/maintenance_cover.jpg',
-				'ip_whois_url'				=> 'https://who.is/whois-ip/ip-address/%IP',
+				'ip_whois_url'				=> 'https://ipinfo.io/%IP',
 				'available_button_colors'	=> ['blue', 'green', 'orange', 'red', 'grey', 'black', 'white', 'default'],
 				'routing_regex'				=> '([\w_-]+)',
 				'routing_regex_path'		=> '([\w\/_-]+)',
@@ -145,7 +157,7 @@ class Settings {
 			}
 			unset($v);
 			
-			if($settings['theme_logo_height'] !== NULL) {
+			if($settings['theme_logo_height'] > 0) {
 				$settings['theme_logo_height'] = (int) $settings['theme_logo_height'];
 			}
 
@@ -160,7 +172,7 @@ class Settings {
 					}
 				}
 				
-				if(G\is_integer($settings['website_mode_personal_uid'])) {
+				if(G\is_integer($settings['website_mode_personal_uid'], ['min' => 0])) {
 					foreach($settings['single_user_mode_on_disables'] as $k) {
 						$settings[$k] = false;
 					}
@@ -244,6 +256,7 @@ class Settings {
 		self::$settings[$key] = $value ?: NULL;
 	}
 	
+	/* Multi settings update [name => value]*/
 	public static function update($name_values) {
 		try {
 			$query = '';
@@ -251,13 +264,12 @@ class Settings {
 			$query_tpl = 'UPDATE `' . DB::getTable('settings') . '` SET `setting_value` = %v WHERE `setting_name` = %k;' . "\n";			
 			$i = 0;
 			foreach($name_values as $k => $v) {
-				$query .= strtr($query_tpl, ['%v' => ':sv_' . $i, '%k' => ':sn_' . $i]);
-				$binds[':sn_' . $i] = $k;
-				$binds[':sv_' . $i] = $v;
+				$query .= strtr($query_tpl, ['%v' => ':v_' . $i, '%k' => ':n_' . $i]);
+				$binds[':v_' . $i] = $v;
+				$binds[':n_' . $i] = $k;
 				$i++;
 			}
 			unset($i);
-			
 			$db = DB::getInstance();
 			$db->query($query);
 			foreach($binds as $k => $v) {
